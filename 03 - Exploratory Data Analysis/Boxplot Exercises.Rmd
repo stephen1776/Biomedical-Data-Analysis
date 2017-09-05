@@ -1,0 +1,67 @@
+---
+title: "Boxplot Exercises"
+author: "Stephen Blatti"
+date: "August 8, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+The InsectSprays data set measures the counts of insects in agricultural experimental units treated with different insecticides. This dataset is included in R, and you can examine it by typing:
+
+head(InsectSprays)
+
+Try out two equivalent ways of drawing boxplots in R, using the InsectSprays dataset. Below is pseudocode, which you should modify to work with the InsectSprays dataset.
+
+    1) using split:
+    
+    boxplot(split(values, factor))
+    
+    2) using a formula:
+
+boxplot(values ~ factor)
+
+1. Which spray seems the most effective (has the lowest median)?
+```{r}
+dat <- InsectSprays
+head(dat)
+boxplot(split(dat$count, dat$spray))
+boxplot(dat$count ~ dat$spray)
+```
+
+2. Let's consider a random sample of finishers from the New York City Marathon in 2002. This dataset can be found in the UsingR package. Load the library and then load the nym.2002 dataset.
+
+    library(dplyr)
+    data(nym.2002, package="UsingR")
+
+Use boxplots and histograms to compare the finishing times of males and females. Which of the following best describes the difference? 
+
+```{r}
+#install.packages(dplyr)
+library(dplyr)
+#install.packages("UsingR")
+#library(UsingR)
+data(nym.2002, package="UsingR")
+x <- filter(nym.2002, gender=="Male") %>% select(time) %>% unlist 
+y <- filter(nym.2002, gender=="Female") %>% select(time) %>% unlist 
+
+par(mfrow = c(1,3))
+boxplot(y, x)
+hist(y,xlim=c(range(nym.2002$time)))
+hist(x,xlim=c(range(nym.2002$time)))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+

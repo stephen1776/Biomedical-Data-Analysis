@@ -1,0 +1,193 @@
+---
+title: "Inference I"
+author: "Stephen Blatti"
+date: "August 3, 2017"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+library(downloader)
+library(dplyr)
+library(rafalib)
+```
+#T-test Exercises
+```{r}
+url <- "https://raw.githubusercontent.com/genomicsclass/dagdata/master/inst/extdata/babies.txt"
+filename <- basename(url)
+download(url, destfile=filename)
+babies <- read.table("babies.txt", header=TRUE)
+#First, let's split this into two birth weight datasets: one of birth weights to non-smoking mothers and the #other of birth weights to smoking mothers.
+bwt.nonsmoke <- filter(babies, smoke==0) %>% select(bwt) %>% unlist 
+bwt.smoke <- filter(babies, smoke==1) %>% select(bwt) %>% unlist
+#Now, we can look for the true population difference in means between smoking and non-smoking birth weights.
+library(rafalib)
+mean(bwt.nonsmoke)-mean(bwt.smoke)
+popsd(bwt.nonsmoke)
+popsd(bwt.smoke)
+#The population difference of mean birth weights is about 8.9 ounces. The standard deviations of the nonsmoking and smoking groups are about 17.4 and 18.1 ounces, respectively.
+```
+We are interested in testing whether the birth weights of babies born to non-smoking mothers are significantly different from the birth weights of babies born to smoking mothers. 
+
+1. Set the seed at 1 and obtain a samples from the non-smoking mothers (dat.ns) of size N =25. Then, without resetting the seed, take a sample of the same size from and smoking mothers (dat.s). Compute the t-statistic (call it tval). Please make sure you input the absolute value of the t-statistic. 
+```{r}
+set.seed(1)
+dat.ns <- sample(bwt.nonsmoke, 25)
+dat.s <- sample(bwt.smoke, 25)
+tval <- t.test(dat.ns,dat.s)$stat
+print(tval)
+print(t.test(dat.ns,dat.s))
+
+```
+    or another way 
+    N=25
+    set.seed(1)
+    dat.ns <- sample(bwt.nonsmoke , N)
+    dat.s <- sample(bwt.smoke , N)
+    
+    X.ns <- mean(dat.ns)
+    sd.ns <- sd(dat.ns)
+    
+    X.s <- mean(dat.s)
+    sd.s <- sd(dat.s)
+    
+    sd.diff <- sqrt(sd.ns^2/N+sd.s^2/N)
+    tval <- (X.s - X.ns)/sd.diff
+    tval
+2. Recall that we summarize our data using a t-statistics because we know that in situations where the null hypothesis is true (what we mean when we say "under the null") and the sample size is relatively large, this t-value will have an approximate standard normal distribution. Because we know the distribution of the t-value under the null, we can quantitatively determine how unusual the observed t-value would be if the null hypothesis were true.
+
+The standard procedure is to examine the probability a t-statistic that actually does follow the null hypothesis would have larger absolute value than the absolute value of the t-value we just observed -- this is called a two-sided test.
+
+We have computed these by taking one minus the area under the standard normal curve between -abs(tval) and abs(tval). In R, we can do this by using the pnorm function, which computes the area under a normal curve from negative infinity up to the value given as its first argument: 
+```{r}
+r_tail <- 1 - pnorm(abs(tval))
+l_tail <- pnorm(-abs(tval))
+pval <- l_tail + r_tail
+print(pval)
+# or pval <- 1-(pnorm(abs(tval))-pnorm(-abs(tval)))
+```
+3. Because of the symmetry of the standard normal distribution, there is a simpler way to calculate the probability that a t-value under the null could have a larger absolute value than tval. Choose the simplified calculation from the following:
+    1-2*pnorm(abs(tval))
+    1-2*pnorm(-abs(tval))
+    1-pnorm(-abs(tval))
+    2*pnorm(-abs(tval))correct
+4. By reporting only p-values, many scientific publications provide an incomplete story of their findings. As we have mentioned, with very large sample sizes, scientifically insignificant differences between two groups can lead to small p-values. Confidence intervals are more informative as they include the estimate itself. Our estimate of the difference between babies of smoker and non-smokers: mean(dat.s) - mean( dat.ns). If we use the CLT, what quantity would we add and subtract to this estimate to obtain a 99% confidence interval? 
+```{r}
+se <- sqrt( var(dat.ns) / 25 + var(dat.s) / 25)
+Q <- qnorm(1 - 0.01/2) #=qnorm(0.995)
+interval_Num = Q * se 
+print(interval_Num)
+# or qnorm(0.995)*sqrt( sd( dat.ns)^2/N + sd( dat.s)^2/N )
+```
+# Confidence Intervals Exercises
+5. Set the seed at 1 and obtain two samples, each of size N = 25, from non-smoking mothers (dat.ns) and smoking mothers (dat.s). If instead of CLT, we use the t-distribution approximation, what do we add and subtract to obtain a 99% confidence interval (use 2*N-2 degrees of freedom)? 
+```{r}
+set.seed(1)
+N <- 25
+# Q <- qnorm(1 - 0.01/2) is no longer normal so we now use 
+Q <- qt(1 - 0.01/2, df = 2*N-2)
+interval_Numt = Q * se
+print(interval_Numt)
+# N <- 25
+# set.seed(1)
+# dat.ns <- sample(bwt.nonsmoke, N) 
+# dat.s <- sample(bwt.smoke, N) 
+# qt(0.995,48)*sqrt( sd( dat.ns)^2/N + sd( dat.s)^2/N )
+##note that if you define dat.s before dat.ns, you get a different answer
+##due to sampling randomness
+##tolerance is set to accept both answers
+```
+6. Why are the values from T-test Exercises #4 and Confidence Intervals Exercises #5 so similar?
+
+    Coincidence.
+    They are both related to 99% confidence intervals.
+    N and thus the degrees of freedom is large enough to make the normal and t-distributions very similar.   correct
+    They are actually quite different, differing by more than 1 ounce. 
+    
+7. Which of the following sentences about a Type I error is **not** true?
+
+    The following is another way to describe a Type I error: you decided to reject the null hypothesis on the basis of data that was actually generated by the null hypothesis.
+    The following is the another way to describe a Type I error: due to random fluctuations, even though the data you observed were actually generated by the null hypothesis, the p-value calculated from the observed data was small, so you rejected it.
+    From the original data alone, you can tell whether you have made a Type I error. Correct
+    In scientific practice, a Type I error constitutes reporting a "significant" result when there is actually no result. 
+    
+8. We can explore the trade off of power and Type I error concretely using the babies data. Since we have the full population, we know what the true effect size is (about 8.93) and we can compute the power of the test for true difference between populations.
+
+Set the seed at 1 and take a random sample of N = 5 measurements from each of the smoking and nonsmoking datasets. What is the p-value (use the t-test function)? 
+```{r}
+set.seed(1)
+ N <- 5
+dat5.ns <- sample(bwt.nonsmoke, N) 
+dat5.s <- sample(bwt.smoke, N)
+print(t.test(dat5.ns,dat5.s)) # or t.test(dat5.s, dat5.ns)$p.value
+
+```
+# Power Calculations Exercises
+
+9. Set the seed at 1 and take a random sample of N=5 measurements from each of the smoking and nonsmoking datasets. You used the t-test function to find the p-value.
+
+The p-value is larger than 0.05 so using the typical cut-off, we would not reject. This is a type II error. Which of the following is *not* a way to decrease this type of error?
+
+    Increase our chance of a type I error.
+    Take a larger sample size.
+    Find a population for which the null is not true. correct
+    Use a higher
+    level.
+    
+10. Set the seed at 1, then use the replicate function to repeat the code used in the exercise above 10,000 times. What proportion of the time do we reject at the 0.05 level? 
+```{r}
+set.seed(1)
+N <- 5
+
+alpha <- 0.05
+B <- 10000
+reject <- function(N, alpha = 0.05){
+  dat.ns <- sample(bwt.nonsmoke, N) 
+  dat.s <- sample(bwt.smoke, N)
+  pval <- t.test(dat.ns, dat.s)$p.value
+  pval < alpha #  or t.test(dat.s, dat.ns)$p.value < 0.05
+}
+rejections <- replicate(B,reject(N))
+mean(rejections)
+```
+11. Note that, not surprisingly, the power is lower than 10%. Repeat the exercise above for samples sizes of 30, 60, 90 and 120. Which of those four gives you power of about 80%? 
+
+```{r}
+Ns <- seq(30, 120, 30)
+power <- sapply(Ns, function(N){
+  rejections <- replicate(B, reject(N))
+  print(mean(rejections))
+})
+# or 
+# Ns=c(10,60,90,120)
+# res <- sapply(Ns, function(N){
+#   set.seed(1)
+#   rejects <- replicate(10000,{
+#     dat.ns <- sample(bwt.nonsmoke , N)
+#     dat.s <- sample(bwt.smoke , N)
+#     t.test(dat.s, dat.ns)$p.value < 0.05
+#     })
+#   mean(rejects)
+#   })
+# Ns[ which.min( abs( res - .8) ) ] 
+```
+12. Repeat the problem above, but now require an level of 0.01. Which of those four gives you power of about 80%?
+```{r}
+set.seed(1)
+N <- 5
+alpha <- 0.01
+B <- 10000
+Ns <- seq(30, 120, 30)
+power <- sapply(Ns, function(N){
+  rejections <- replicate(B,{
+    dat.ns <- sample(bwt.nonsmoke , N)
+    dat.s <- sample(bwt.smoke , N) 
+    t.test(dat.s, dat.ns)$p.value < 0.01
+  })
+  mean(rejections)
+})
+Ns[ which.min( abs( power - .8) ) ]
+
+```
