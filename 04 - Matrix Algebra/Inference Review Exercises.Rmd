@@ -1,0 +1,183 @@
+---
+title: "Inference Review Exercises"
+author: "Stephen Blatti"
+date: "August 15, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+The standard error of an estimate is the standard deviation of the sampling distribution of an estimate. In PH525.1x, we saw that our estimate of the mean of a population changed depending on the sample that we took from the population. If we repeatedly sampled from the population, and each time estimated the mean, the collection of mean estimates formed the sampling distribution of the estimate. When we took the standard deviation of those estimates, that was the standard error of our mean estimate.
+
+Here, we aren't sampling individuals from a population, but we do have random noise in our observations Y. The estimate for the linear model terms (beta-hat) will not be the same if we were to re-run the experiment, because the random noise would be different. If we were to re-run the experiment many times, and estimate linear model terms (beta-hat) each time, this is called the sampling distribution of the estimates. If we take the standard deviation of all of these estimates from repetitions of the experiment, this is called the standard error of the estimate. While we are not sampling individuals, you can think about the repetition of the experiment that we are "sampling" new errors in our observation of Y.
+
+1. We have shown how to find the least squares estimates with matrix algebra. These estimates are random variables as they are linear combinations of the data. For these estimates to be useful we also need to compute the standard errors.
+
+Here we review standard errors in the context of linear models.
+
+It is useful to think about where randomness comes from. In our falling object example, randomness was introduced through measurement errors. Every time we rerun the experiment a new set of measurement errors will be made which implies our data will be random. This implies that our estimate of, for example, the gravitational constant will change. The constant is fixed, but our estimates are not. To see this we can run a Monte Carlo simulation. Specifically we will generate the data repeatedly and compute the estimate for the quadratic term each time.
+
+      g = 9.8 ## meters per second
+      
+      h0 = 56.67
+      
+      v0 = 0
+      
+      n = 25
+      
+      tt = seq(0,3.4,len=n) ##time in secs, t is a base function
+      
+      y = h0 + v0 *tt - 0.5* g*tt^2 + rnorm(n,sd=1)
+
+Now we act as if we didn't know h0, v0 and -0.5*g and use regression to estimate these. We can rewrite the model as y = b0 + b1 t + b2 t^2 + e and obtain the LSE we have used in this class. Note that g = -2 b2.
+
+To obtain the LSE in R we could write:
+
+X = cbind(1,tt,tt^2)
+A = solve(crossprod(X))%*%t(X)
+Given how we have defined A, which of the following is the LSE of g, the acceleration due to gravity (suggestion: try the code in R)?
+
+        9.8
+        A %*% y
+        -2 * (A %*% y) [3] correct
+        A[3,3]
+        
+```{r}
+g = 9.8 ## meters per second
+h0 = 56.67
+v0 = 0
+n = 25
+tt = seq(0,3.4,len=n) ##time in secs, t is a base function
+y = h0 + v0 *tt - 0.5* g*tt^2 + rnorm(n,sd=1)
+X = cbind(1,tt,tt^2)
+A = solve(crossprod(X))%*%t(X)
+-2 * (A %*% y) [3]
+```
+Explanation: 9.8 is not the answer because the LSE is a random variable. The A%*%y gives us the LSE for all three coefficients. The third entry gives us the coefficient for the quantradic term which is -0.5 * g. We multiply by -2 to get the estimate of g.
+
+2. In the lines of code above, there was a call to a random function rnorm(). This means that each time the lines of code above are repeated, the estimate of g will be different.
+
+Use the code above in conjunction with the function replicate() to generate 100,000 Monte Carlo simulated datasets. For each dataset compute an estimate of g (remember to multiply by -2) and set the seed to 1.
+What is the standard error of this estimate?
+
+```{r}
+set.seed(1)
+sim <- replicate(100000,{
+  tt = seq(0,3.4,len=n) ##time in secs, t is a base function
+  y = h0 + v0 *tt - 0.5* g*tt^2 + rnorm(n,sd=1)
+  X = cbind(1,tt,tt^2)
+  A = solve(crossprod(X))%*%t(X)
+  -2 * (A %*% y) [3]
+})
+sd(sim)
+```
+          
+        Explanation
+        B = 100000
+        g = 9.8 ## meters per second
+        n = 25
+        tt = seq(0,3.4,len=n) ##time in secs, t is a base function
+        X = cbind(1,tt,tt^2)
+        A = solve(crossprod(X))%*%t(X)
+        set.seed(1)
+        betahat = replicate(B,{
+        y = 56.67 - 0.5*g*tt^2 + rnorm(n,sd=1)
+        betahats = -2*A%*%y
+        return(betahats[3])
+        })
+        
+        sqrt(mean( (betahat-mean(betahat) )^2))          
+                  
+
+3. In the father and son height examples we have randomness because we have a random sample of father and son pairs. For the sake of illustration let's assume that this is the entire population:
+
+library(UsingR)
+
+x = father.son$fheight
+
+y = father.son$sheight
+
+n = length(y)
+
+Now let's run a Monte Carlo simulation in which we take a sample of size 50 over and over again. Here is how we obtain one sample:
+
+N =  50
+
+index = sample(n,N)
+
+sampledat = father.son[index,]
+
+x = sampledat$fheight
+
+y = sampledat$sheight
+
+betahat =  lm(y~x)$coef
+
+What is the standard error of the slope estimate? That is, calculate the standard deviation of the estimate from many random samples. Again, set the seed to 1.
+Use the function replicate to take 10,000 samples.
+
+```{r}
+library(UsingR)
+set.seed(1)
+sim3 <- replicate(10000, {
+  x = father.son$fheight
+  y = father.son$sheight
+  n = length(y)
+  N =  50
+  index = sample(n,N)
+  sampledat = father.son[index,]
+  x = sampledat$fheight
+  y = sampledat$sheight
+  betahat =  lm(y~x)$coef
+  return(betahat)
+})
+sd(sim3[2,])
+```
+     
+        Explanation:
+        N = 50
+        B = 10000
+        set.seed(1)
+        betahat = replicate(B,{
+        index = sample(n,N)
+        sampledat = father.son[index,]
+        x = sampledat$fheight
+        y = sampledat$sheight
+        lm(y~x)$coef[2]
+        })
+        
+        sqrt ( mean( (betahat - mean(betahat) )^2 ))
+
+4. We are defining a new concept: covariance. The covariance of two lists of numbers X=X1,...,Xn and Y=Y1,...,Yn is mean( (Y - mean(Y))*(X-mean(X) ) ).
+Which of the following is closest to the covariance between father heights and son heights
+
+      0
+      -4
+      4 correct
+      0.5
+
+```{r}
+set.seed(1)
+sim3 <- replicate(1, {
+  x = father.son$fheight
+  y = father.son$sheight
+  n = length(y)
+  N =  50
+  index = sample(n,N)
+  sampledat = father.son[index,]
+  x = sampledat$fheight
+  y = sampledat$sheight
+  return(matrix(cbind(x,y), N,2))
+})
+cov(sim3[,1,], sim3[,2,])
+```
+      Explanation:
+      One can compute it using R:
+      Y=father.son$fheight
+      X=father.son$sheight
+      mean( (Y - mean(Y))*(X-mean(X) ) )
+      Note we know it can't be 0 because only independent variables have covariance 0. And we know it can't be negative because these variables are positively correlated thus (Y - mean(Y)) and (X-mean(X) ) tend to have the same sign

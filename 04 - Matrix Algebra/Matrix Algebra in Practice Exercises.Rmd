@@ -1,0 +1,100 @@
+---
+title: "Matrix Algebra in Practice Exercises"
+author: "Stephen Blatti"
+date: "August 15, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Suppose we are analyzing a set of 4 samples. The first two samples are from a treatment group A and the second two samples are from a treatment group B. This design can be represented with a model matrix like so:
+
+X <- matrix(c(1,1,1,1,0,0,1,1),nrow=4)
+rownames(X) <- c("a","a","b","b")
+
+X will then look like:
+
+a 1 0
+a 1 0
+b 1 1
+b 1 1
+
+Suppose that the fitted parameters for a linear model give us:
+
+beta <- c(5, 2)
+
+Use the matrix multiplication operator, %*%, in R to answer the following questions:
+
+1. What is the fitted value for the A samples? (The fitted Y values.)
+
+```{r}
+X <- matrix(c(1,1,1,1,0,0,1,1),nrow=4)
+rownames(X) <- c("a","a","b","b")
+beta <- c(5, 2)
+fitted = X %*% beta
+fitted[1:2, ]
+```
+
+2. What is the fitted value for the B samples? (The fitted Y values.)
+
+```{r}
+fitted[3:4, ]
+```
+
+Suppose now we are comparing two treatments B and C to a control group A, each with two samples. This design can be represented with a model matrix like so:
+
+X <- matrix(c(1,1,1,1,1,1,0,0,1,1,0,0,0,0,0,0,1,1),nrow=6)
+rownames(X) <- c("a","a","b","b","c","c")
+
+which results in a matrix that looks like
+
+a 1 0 0
+a 1 0 0
+b 1 1 0
+b 1 1 0
+c 1 0 1
+c 1 0 1
+
+Suppose that the fitted values for the linear model are given by:
+
+beta <- c(10,3,-3)
+
+3. What is the fitted value for the B samples?
+
+```{r}
+X <- matrix(c(1,1,1,1,1,1,0,0,1,1,0,0,0,0,0,0,1,1),nrow=6)
+rownames(X) <- c("a","a","b","b","c","c")
+beta <- c(10,3,-3)
+fitted = X %*% beta
+fitted[3:4, ]
+```
+
+4. What is the fitted value for the C samples?
+
+```{r}
+fitted[5:6, ]
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

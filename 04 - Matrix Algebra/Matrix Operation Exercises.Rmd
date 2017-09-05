@@ -1,0 +1,105 @@
+---
+title: "Matrix Operation Exercises"
+author: "Stephen Blatti"
+date: "August 13, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+1. Suppose X is a matrix in R. Which of the following is NOT equivalent to X?
+
+          t( t(X) )
+          X %*% matrix(1,ncol(X) ) correct
+          X*1
+          X%*%diag(ncol(X)) 
+
+```{r}
+r1 <- c(1,3,2)
+r2 <- c(1,-2,1)
+r3 <- c(1,1,-1)
+abc <- c(6,2,1)
+X <- matrix(cbind(r1,r2,r3),3,3)
+Y <- matrix(abc,3,1)
+solve(X,Y)
+X
+t( t(X) )
+X %*% matrix(1,ncol(X) )
+X*1
+X%*%diag(ncol(X)) 
+```
+Explanation
+
+The first transposes the transpose, so we end up with our original X. The third is multiplying each element by 1, and the fourth is multiplying X by the identity. The second is not even guaranteed to have the same dimensions as X.
+
+2. Solve the following system of equations using R:
+
+        3a + 4b - 5c + d = 10
+        
+        2a + 2b + 2c - d = 5
+        
+        a -b + 5c - 5d = 7
+        
+        5a + d = 4
+
+What is the solution for c:
+
+```{r}
+r1 <- c(3,4,-5,1)
+r2 <- c(2,2,2,-1)
+r3 <- c(1,-1,5,-5)
+r4 <- c(5,0,0,1)
+abcd <- c(10,5,7,4)
+X <- matrix(rbind(r1,r2,r3,r4),4,4)
+X
+solve(X, abcd)
+```
+
+3. Load the following two matrices into R:
+
+a <- matrix(1:12, nrow=4)
+b <- matrix(1:15, nrow=3)
+
+Note the dimension of 'a' and the dimension of 'b'.
+
+In the question below, we will use the matrix multiplication operator in R, %*%, to multiply these two matrices.
+
+What is the value in the 3rd row and the 2nd column of the matrix product of 'a' and 'b'?
+
+```{r}
+a <- matrix(1:12, nrow=4)
+b <- matrix(1:15, nrow=3)
+c <- a %*% b
+c[3,2]
+
+```
+4. Multiply the 3rd row of 'a' with the 2nd column of 'b', using the element-wise vector multiplication with *.
+What is the sum of the elements in the resulting vector?
+
+```{r}
+sum(a[3,] * b[,2])
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
