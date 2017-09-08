@@ -1,6 +1,5 @@
 ---
 title: "Inference II"
-author: "Stephen Blatti"
 date: "August 4, 2017"
 output: html_document
 ---
@@ -51,7 +50,7 @@ The approximations are spot on for all sample sizes. correct
 None. We should use CLT instead.
 ```{r}
 set.seed(1)
-# My soln one at a time
+
 # ttestGenerator <- function(n){
 #   X <- rnorm(n)
 #   tstat <- sqrt(n)*mean(X) / sd(X)
@@ -64,7 +63,7 @@ set.seed(1)
 # qqplot(qt(ps, df = 4), ttests, xlim=c(-6,6),ylim=c(-6,6))
 # abline(0,1)
 
-# or
+
 library(rafalib)
 mypar(3,2)
 
