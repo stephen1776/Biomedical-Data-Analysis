@@ -1,0 +1,100 @@
+---
+title: "Bonferroni Correction Exercises"
+author: "Stephen Blatti"
+date: "September 2, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+This assessment should help you understand the concept of a error controlling procedure. You can think of it as defnining a set of instructions, such as "reject all the null hypothesis for  for which p-values < 0.0001" or "reject the null hypothesis for the 10 features with smallest p-values". Then, knowing the p-values are random variables, we use statistical theory to compute how many mistakes, on average, will we make if we follow this procedure. More precisely we commonly bounds on these rates, meaning that we show that they are smaller than some predermined value.
+
+As described in the video, we can compute different error rates. The FWER tells us the probability of having at least one false positive. The FDR is the expected rate of rejected null hypothesis.
+
+Note 1: the FWER and FDR are not procedures but error rates. We will review procedures here and use Monte Carlo simulations to estimate their error rates.
+
+Note 2: We sometimes use the colloquial term "pick genes that" meaning "reject the null hypothesis for genes that."
+
+1. (Bonferonni versus Sidak) Make a plot of alpha / m and (1 - alpha)^(1/m) for various values of m > 1.
+
+Which procedure is more conservative (picks less genes, i.e. rejects less null hypothesis): Bonferroni's or Sidak's?
+The are the same
+Bonferroni's correct
+Depends on m
+Sidak's
+
+```{r}
+alphas <- seq(0,0.25,0.01)
+par(mfrow=c(2,2))
+for(m in c(2,10,100,1000)){
+  plot(alphas,alphas/m - (1-(1-alphas)^(1/m)),type="l")
+  abline(h=0,col=2,lty=2)
+}
+
+#Note that for small values of $\alpha$ the difference between these cutoffs are very similar.
+```
+
+2. (Monte Carlo Simulation) Monte Carlo simulation. To simulate the p-value results of, say, 8,793 t-tests for which the null is true we don't actual have to generate the original data. As we learned in class we can generate p-values from a uniform distribution like this:
+
+pvals <- runif(8793,0,1)
+
+Using what we have learned, set the cutoff using the Bonferroni correction that guarantees an FWER lower than 0.05 and report back the FWER. Set the seed at 1,set.seed(1) and run 10,000 simulation. Report the Monte Carlo estimate of the FWER below.
+
+```{r}
+set.seed(1)
+B <- 10000 # number of simulations
+m <- 8793 #8,793 t-tests for which the null is true
+alpha <- 0.05
+pvals <- matrix(runif(B*m,0,1),B,m)
+k <- alpha / m
+mistakes <- rowSums(pvals < k) 
+mean(mistakes > 0)
+```
+
+3. Using the same seed repeat the above for Sidak's cutoff.
+Report the FWER below.
+
+```{r}
+set.seed(1)
+B <- 10000
+m <- 8793
+k <- 1 - (1-alpha)^(1/m)
+
+mistakes <- replicate(B, {
+    pvals <- runif(m, 0, 1)
+    sum(pvals < k)
+})
+mean(mistakes > 0)
+
+#or
+# set.seed(1)
+# B <- 10000
+# m <- 8793
+# alpha <- 0.05
+# pvals <- matrix(runif(B*m,0,1),B,m)
+# k <- (1-(1-alpha)^(1/m))
+# mistakes <- rowSums(pvals<k) 
+# mean(mistakes>0)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

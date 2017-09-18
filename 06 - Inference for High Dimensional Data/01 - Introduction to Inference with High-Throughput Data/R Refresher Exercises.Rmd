@@ -1,0 +1,63 @@
+---
+title: "R Refresher Exercises"
+author: "Stephen Blatti"
+date: "August 27, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Note that in this course we will be using base R rather than the dplyr approach used in course 1. You should become familiar with subsetting such as the following: to subset a matrix dat for which the third column is larger than k you do as follows:
+
+dat[ dat[,3] > k , ]
+
+1. Download and install the GSE5859Subset package then load the data.
+```{r}
+library(devtools)
+install_github("genomicsclass/GSE5859Subset")
+library(GSE5859Subset)
+data(GSE5859Subset) ##this loads the three tables
+```
+How many samples where processed on 2005-06-27?
+
+```{r}
+sum(sampleInfo$date == "2005-06-27")
+```
+2. How many of the genes represented in this particular technology are on chromosome Y?
+```{r}
+sum(geneAnnotation$CHR == "chrY", na.rm = TRUE)
+
+```
+3. What is the log expression value of the for gene ARPC1A on the one subject that we measured on 2005-06-10?
+```{r}
+#We can get the row of the measurement table from the geneAnnotation table and the column of the measurement table from the sampleInfo table.
+rowgE = which(geneAnnotation$SYMBOL == "ARPC1A")
+colgE = which(sampleInfo$date == "2005-06-10")
+geneExpression[rowgE, colgE]
+```
+4. Use the function apply to find the median value of each column. What is the median value of these values?
+```{r}
+median(apply(geneExpression,2,median))   
+# or median(geneExpression[,median(1):median(24)])
+
+```
+5. This problem is more advanced than the previous ones. Note that it might take you some time to solve and you should feel free to seek help in the discussion forum. The exercises is meant to motivate you to learn a an imporant R skills: creating functions to use with apply.
+
+Write a function that takes a vector of values e and a binary vector group coding two groups, and returns the p-value from a t-test: t.test( e[group==1], e[group==0])$p.value.
+
+Now define g to code cases (1) and controls (0) like this g <- factor(sampleInfo$group)
+
+Next use the function apply to run a t-test for each row of geneExpression and obtain the p-value. What is smallest p-value among all these t-tests? 
+```{r}
+fcn_ttest <- function(e,group){
+    x <- e[group==1]
+    y <- e[group==0]
+    return( t.test(x,y)$p.value )
+}
+g <- factor(sampleInfo$group)
+pVals <- apply(geneExpression,1,fcn_ttest,group=g) # we want each row
+min(pVals)
+```
+Note that we will later learn about the rowttests function from the genefilter package. 
