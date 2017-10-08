@@ -1,0 +1,139 @@
+---
+title: "Confounding Exercises"
+date: "October 4, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+#Install the latest version of the dagdata packge from the genomicsclass github repository. 
+#Load the admissions data from the dagdata package:
+
+library(dagdata)
+data(admissions)
+
+#Familiarize yourself with this table:
+
+print( admissions )
+
+#You can also obtain this data directly from here.
+
+#To install the library(GSE5859):
+
+library(devtools)
+
+install_github("genomicsclass/GSE5859")
+
+
+```
+1. Let's compute the proportion of men who were accepted:
+```{r}
+index = which(admissions$Gender==1)
+accepted= sum(admissions$Number[index] * admissions$Percent[index]/100)
+applied = sum(admissions$Number[index])
+accepted/applied
+```
+What is the proportion of women that were accepted?
+```{r}
+f_index = which(admissions$Gender==0)
+f_accepted = sum( admissions$Number[f_index] * admissions$Percent[f_index]/100 )
+f_applied = sum(admissions$Number[f_index])
+f_accepted / f_applied
+```
+
+2. Now that we have observed different acceptance rates between genders, test for the significance of this result.
+
+If you perform an independence test, what is the p-value?
+
+Hint: create a table that has the totals for accepted and not-accepted by gender then use chisq.test
+
+```{r}
+# Use example page 412
+men = which(admissions$Gender==1)
+women = which(admissions$Gender==0)
+men_accepted = sum(admissions$Number[men] * admissions$Percent[men]/100)
+men_not_accepted = sum( admissions$Number[men] * (1 - admissions$Percent[men]/100) )
+women_accepted = sum(admissions$Number[women] * admissions$Percent[women]/100)
+women_not_accepted = sum( admissions$Number[women] * (1 - admissions$Percent[women]/100) )
+tabl = matrix(c(men_accepted, women_accepted, men_not_accepted, women_not_accepted),2,2)  
+print(chisq.test(tabl)$p.val)
+#9.139492e-22 so we reject the hypothesis that gender and admission are independent.
+
+# model answer
+# index = admissions$Gender==1
+# men = admissions[index,]
+# women = admissions[!index,]
+# menYes = sum(men$Number*men$Percent/100)
+# menNo = sum(men$Number*(1-men$Percent/100))
+# womenYes = sum(women$Number*women$Percent/100)
+# womenNo = sum(women$Number*(1-women$Percent/100))
+# tab = matrix(c(menYes,womenYes,menNo,womenNo),2,2)
+# chisq.test(tab)$p.value
+```
+This difference actually led to a lawsuit.
+
+Now notice that looking at the data by major, the differences disappear.
+```{r}
+index = admissions$Gender==1
+men = admissions[index,]
+women = admissions[!index,]
+print( data.frame( major=admissions[1:6,1],men=men[,3], women=women[,3]) )
+```
+How can this be? This is referred to as Simpson's Paradox.
+
+In the following questions we will try to decipher why this is happening.
+
+3. We can quantify how "hard" a major is using the percent of students that were accepted. Compute the percent that were accepted (regardless of gender) to each major and call this vector H
+Which is the hardest major? (enter a letter)
+```{r}
+majors = admissions[1:12,1]
+men = admissions[1:6,]
+women =admissions[7:12,]
+H = ( men$Number * men$Percent / 100 + women$Number * women$Percent / 100 ) / (men$Number + women$Number)
+H
+majors[which.min(H)]
+```
+
+4. What proportion gets in for the major from Confounding Exercises #3?
+```{r}
+min(H)
+```
+
+5. For men, what is the correlation between the number of applications across majors and H?
+```{r}
+cor(H, men$Number)
+```
+6. For women, what is the correlation between the number of applications across majors and H?
+```{r}
+cor(H, women$Number)
+```
+
+7. Given the answers to Confounding Exercises #5 and #6, which best explains the differences in admission percentages when we combine majors?
+
+    We made a coding mistake when computing the overall admissions percentages.
+    There were more total number of women applications which made the denominator much bigger.
+    There is confounding between gender and preference for "hard" majors: females are more likely to apply to harder majors. correct
+    The sample size for the individual majors was not large enough to draw the correct conclusion.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

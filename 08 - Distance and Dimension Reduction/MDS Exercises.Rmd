@@ -1,0 +1,161 @@
+---
+title: "MDS Exercises"
+date: "September 24, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+For the following queesions use the data loaded with:
+```{r}
+library(tissuesGeneExpression)
+data(tissuesGeneExpression)
+```
+In these exercise we will demonstrate the relantionship between the SVD and the output of mdscale, the function in R that performs MDS.
+
+Using the z we computed in SVD Exercises #4
+```{r}
+y = e - rowMeans(e)
+s = svd(y)
+z = s$d * t(s$v)
+```
+we can make an mds plot
+```{r}
+library(rafalib)
+ftissue = factor(tissue)
+mypar(1,1)
+plot(z[1,],z[2,],col=as.numeric(ftissue))
+legend("topleft",levels(ftissue),col=seq_along(ftissue),pch=1)
+```
+Now run the function cmdscale on the original data
+```{r}
+d = dist(t(e))
+mds = cmdscale(d)
+```
+What is the correlation between the first row of z and the first column in mds?
+```{r}
+cor(z[1,],mds[,1])
+```
+2. What is the correlation between the second row of z and the second column in mds?
+```{r}
+cor(z[2,],mds[,2])
+```
+3. Note that the mds plot is not the same:
+```{r}
+library(rafalib)
+ftissue = factor(tissue)
+mypar(1,2)
+plot(z[1,],z[2,],col=as.numeric(ftissue))
+legend("topleft",levels(ftissue),col=seq_along(ftissue),pch=1)
+plot(mds[,1],mds[,2],col=as.numeric(ftissue))
+```
+Given the answer to MDS Exercises #1, what do we have to do to z[1,] and z[2,] to get a practically identical plot?
+
+    It is impossible
+    Use the columns instead z[,1] and z[,2]
+    Remove the row means from e before computing the distance
+    multiply z[1,] and z[2,] by -1 correct
+
+From the answer to the previous question we see that we have a flipped sign in both dimensions. 
+
+4. Load the following dataset
+```{r}
+library(GSE5859Subset)
+data(GSE5859Subset)
+```  
+
+Compute the svd and compute z
+```{r}
+s = svd(geneExpression-rowMeans(geneExpression))
+z = s$d * t(s$v)
+```
+Which dimension of z most correlates with the outcome sampleInfo$group?
+```{r}
+which.max(cor(sampleInfo$group,t(z)))
+```
+5. Load the following dataset
+```{r}
+library(GSE5859Subset)
+data(GSE5859Subset)
+```  
+
+Compute the svd and compute z
+```{r}
+s = svd(geneExpression-rowMeans(geneExpression))
+z = s$d * t(s$v)
+```
+What is this max correlation?
+```{r}
+max(cor(sampleInfo$group,t(z)))
+```
+6. Load the following dataset
+
+library(GSE5859Subset)
+data(GSE5859Subset)
+  
+
+Compute the svd and compute z
+
+s = svd(geneExpression-rowMeans(geneExpression))
+z = s$d * t(s$v)
+
+Which dimension of z has the second highest correlates with the outcome sampleInfo$group?
+
+```{r}
+which.max( cor(sampleInfo$g,t(z))[-1] ) + 1
+# We add 1 because we took out the first.
+```
+
+7. Note these measurements were made during two months:
+
+```{r}
+sampleInfo$date
+
+#We can extract the month this way:
+
+month = format( sampleInfo$date, "%m")
+month = factor( month)
+```  
+
+Which dimension of z has the highest correlation with the outcome month?
+What is this correlation?
+
+```{r}
+which.max(cor(as.numeric(month),t(z)))
+max(cor(as.numeric(month),t(z)))
+
+#Note that the same dimension is correlated with both the group and the date. Not also that these are correlated:
+
+table(sampleInfo$g,month)
+  
+
+#So is this first dimension related directly to group or is it related only through the month? Note that the correlation with month is higher. This is related to batch effects which we will learn about later.
+```
+
+8. Note: this is an advanced question. Please feel free to discuss on the forum.
+
+In MDS Exercises #7 we saw that that one of the dimensions was highly correlated to the sampleInfo$group. Now take the 5th column of U and stratify by the gene chromosome. Remove chrUn and make a boxplot of the values of
+$U_6$ stratified by chromosome.
+
+Which chromosome looks different from the rest? Copy and paste the name as it appears in geneAnnotation
+```{r}
+df <- data.frame(geneAnnotation$CHR,s$u[,6])
+names(df) <- c("Chromosome","U6")
+df <- df[!df$Chromosome == "chrUn", ]
+head(df)
+boxplot(U6~Chromosome,data=df)
+```
+
+```{r}
+# the model answer
+result = split(s$u[,6],geneAnnotation$CHR)
+result = result[ which(names(result)!="chrUn") ]
+boxplot(result,range=0)
+boxplot(result,range=0,ylim=c(-0.025,0.025))
+medians = sapply(result,median)
+names(result)[ which.max(abs(medians)) ]
+```
+
+
+

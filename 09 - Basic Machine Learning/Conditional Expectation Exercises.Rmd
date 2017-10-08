@@ -1,0 +1,80 @@
+---
+title: "Conditional Expectation Exercises"
+author: "Stephen Blatti"
+date: "October 1, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Throughout this assessment it will be useful to remember that when our data are 0s and 1s, probabilities and expectations are the same thing. We can do the math, but here is an example in the form of R code:
+```{r}
+n = 1000
+y = rbinom(n,1,0.25)
+##proportion of ones Pr(Y)
+sum(y==1)/length(y)
+##expectaion of Y
+mean(y)
+```
+1. Generate some random data to imitate heights for men (0) and women (1):
+```{r}
+n = 10000
+set.seed(1)
+men = rnorm(n,176,7) #height in centimeters
+women = rnorm(n,162,7) #height in centimeters
+y = c(rep(0,n),rep(1,n))
+x = round(c(men,women))
+##mix it up
+ind = sample(seq(along=y))
+y = y[ind]
+x = x[ind]
+```
+
+Treating the data generated above as the population, if we know someone is 176 cm tall, what it the probability that this person is a woman: $P(Y=1|X=176)=E(Y|X=176)$
+```{r}
+mean(y[x==176])
+```
+2. Now make a plot of $E(Y|X=x)$ for x=seq(160,178) using the data generated in Conditional Expectation Exercises  num 1.
+
+Suppose for each height x you predict 1 (female) if $P(Y|X=x) > 0.5$ and 0 (male) otherwise. What is the largest height for which you predict female?
+
+```{r}
+xs <- seq(160,178)
+p_ys <- sapply(xs,function(k){
+  mean(y[x==k])
+  })
+plot(xs,p_ys, xlab="Height (inches)",ylab="P(woman)" )
+abline(h=0.5, col = "blue")
+abline(v=168, col = "red")
+max(xs[p_ys > 0.5])
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

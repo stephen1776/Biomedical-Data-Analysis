@@ -1,0 +1,168 @@
+---
+title: "Factor Analysis Exercises"
+date: "October 7, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+#We will continue to use this dataset:
+
+library(Biobase)
+library(GSE5859Subset)
+data(GSE5859Subset)
+
+#and define
+
+y = geneExpression - rowMeans(geneExpression)
+```
+1. Compute and plot an image of the correlation for each sample. Make two image plots of these correlations. In the first one, plot the correlation as image. In the second, order the samples by date and then plot the an image of the correlation. The only difference in these plots is the order in which the samples are plotted.
+```{r}
+##simple version
+library(rafalib)
+sex = sampleInfo$group
+mypar(1,2)
+cors = cor(y)
+image(cors)
+o = order(sampleInfo$date)
+image(cors[o,o])
+```
+```{r}
+# ##advanced version
+# library(rafalib)
+# sex = sampleInfo$group
+# mypar(1,2)
+# cols=colorRampPalette(rev(brewer.pal(11,"RdBu")))(100)
+# cors = cor(y)
+# image(1:ncol(y),1:ncol(y),cors,col=cols,zlim=c(-1,1),
+#        xaxt="n",xlab="",yaxt="n",ylab="")
+# axis(2,1:ncol(y),sex,las=2)
+# axis(1,1:ncol(y),sex,las=2)
+# o = order(sampleInfo$date)
+# image(1:ncol(y),1:ncol(y),cors[o,o],col=cols,zlim=c(-1,1),
+#       xaxt="n",xlab="",yaxt="n",ylab="")
+# label = gsub("2005-","",sampleInfo$date[o])
+# axis(2,1:ncol(y),label,las=2)
+# axis(1,1:ncol(y),label,las=2)
+  
+```
+Based on these plots, which of the following you would say is true:
+
+    The samples appear to be completely independent of each other.
+    Sex seems to be creating structures as evidenced by the two cluster of highly correlated samples.
+    The fact that in the plot ordered by month we see two groups mainly driven by month and within these, we see subgroups driven by date seems to suggest date more than month per se are the hidden factors. correct
+    There appear to be only two factors completely driven by month. 
+
+2. Based on the correlation plots above, we could argue that there are at least two hidden factors. Using PCA estimate these two factors. Specifically, apply the svd to y and use the first two PCs as estimates.
+Which command gives us these estimates?
+
+    pcs = svd(y)$v[1:2,]
+    pcs = svd(y)$v[,1:2] correct
+    pcs = svd(y)$u[,1:2]
+    pcs = svd(y)$d[1:2]
+
+```{r}
+pcs = svd(y)$v[,1:2]
+```
+
+3. Plot each of the estimated factor ordered by date. Use color to denote month. The first factor is clearly related to date.
+
+Which of the following appear to be most different according to this factor?
+
+    June 23 and June 27 correct
+    Oct 07 and Oct 28
+    June 10 and June 23
+    June 15 and June 24 
+
+```{r}
+month = format(sampleInfo$date, "%m")
+pcs = svd(y)$v[,1:2]
+o = order(sampleInfo$date)
+cols = as.numeric(month)[o]
+mypar(2,1)
+for(i in 1:2){
+  plot(pcs[o,i],col=cols,xaxt="n",xlab="")
+  label = gsub("2005-","",sampleInfo$date[o])
+  axis(1,1:ncol(y),label,las=2)
+}
+```
+
+4. Use the svd function to obtain the principal components (PCs) for our detrended gene expression data y:
+
+How many principal components (PCs) explain more than 10% each of the variability?
+```{r}
+s = svd(y)
+var_explained = s$d^2 / sum(s$d^2)
+plot(var_explained)
+sum(var_explained > 0.10)
+```
+
+5. Which PC most correlates (negative or positive correlation) with month?
+```{r}
+cors = cor(as.numeric(month),s$v)
+plot(t(cors))
+which.max(abs(cors))
+```
+
+What is this correlation (in absolute value)?
+```{r}
+max(abs(cors))
+```
+
+6. Which PC most correlates (negative or positive correlation) with sex? 
+```{r}
+sex = sampleInfo$group
+cors = cor(as.numeric(sex),s$v)
+plot(t(cors))
+which.max(abs(cors))
+```
+
+What is this correlation (in absolute value)?
+```{r}
+max(abs(cors))
+```
+
+7. Now instead of using month, which we have shown does not quite describe the batch, add the two estimated factors in Factor Analysis Exercises #6 to the linear model we used in previous exercises.
+```{r}
+X <- model.matrix(~sex+s$v[,1:2])
+```
+Apply this model to each gene, and compute q-values for the sex difference.
+
+How many q-values are <0.1 for the sex comparison?
+```{r}
+library(qvalue)
+library(genefilter)
+X = model.matrix(~sex+s$v[,1:2])
+pvals = t( sapply(1:nrow(geneExpression),function(j){
+  y = geneExpression[j,]
+  fit = lm(y ~ X-1)
+  summary(fit)$coef[2,4]
+}) )
+qval = qvalue(pvals)
+qvals = qval$qvalues
+sum(qvals < 0.1)
+```
+
+What proportion of the genes are on chrX and chrY?
+```{r}
+index = geneAnnotation$CHR[qvals<0.1] %in% c("chrX","chrY")
+mean(index)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+

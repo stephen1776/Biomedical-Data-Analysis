@@ -1,0 +1,160 @@
+---
+title: "Confounding in Genomics Exercises"
+date: "October 5, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#Load the data for this gene expression dataset:
+
+library(Biobase)
+library(GSE5859)
+data(GSE5859)
+
+#Note that this is the original dataset from which we selected the subset used in GSE5859Subset.  
+#You can obtain it from the genomicsclass GitHub repository.
+
+#We can extract the gene expression data and sample information table using the Bio conductor functions exprs and pData like this:
+
+geneExpression = exprs(e)
+sampleInfo = pData(e)
+```
+1. Familiarize yourself with the sampleInfo table. Note that some samples were processed at different times. This is an extraneous variable and should not affect the values in geneExpression. However, as we have seen in previous analyses it does appear to have an effect so we will explore this here.
+
+You can extract the year from each date like this:
+
+year = format(sampleInfo$date,"%y")
+
+Note there are
+
+length( unique(year) )
+
+unique years for which we have data.
+For how many of these years do we have more than one ethnicity represented?
+```{r}
+year = format(sampleInfo$date,"%y")
+length( unique(year) )
+tabl3 = table(year,sampleInfo$ethnicity)
+tabl3
+x = rowSums(tabl3 != 0)
+x
+sum(x > 1)
+1/21
+```
+2. Repeat the above exercise but now instead of year consider the month as well. Specifically, instead of the year variable defined above use:
+
+month.year = format(sampleInfo$date,"%m%y")
+
+For what proportion of these month.year values do we have more than one ethnicity represented?
+```{r}
+month.year = format(sampleInfo$date,"%m%y")
+tab2 = table(month.year,sampleInfo$ethnicity)
+tab2
+x = rowSums(tab2 != 0)
+sum(x > 1) / length(x)
+# or mean( x >= 2)
+```
+Note that this implies that month.year and ethnicity are almost completely confounded. This means that it is hard to separate effects due to date from effects due to our outcome of interest.
+
+3. Perform a t-test (use rowttests) comparing CEU samples processed in 2002 to those processed in 2003. Then use the qvalue package to obtain q-values for each gene.
+
+How many genes have q-values < 0.05?
+```{r}
+library(qvalue)
+library(genefilter) # has the rowttests fctn
+year = factor( format(sampleInfo$date,"%y") )
+index = which(year %in% c("02","03") & sampleInfo$ethnicity == "CEU")
+year = droplevels(year[index]) # keeps years 02 and 03
+pval = rowttests(geneExpression[ ,index], year)$p.value
+qval = qvalue(pval)
+sum(qval$qvalue < 0.05)
+```
+
+What is the estimate of pi0 provided by qvalue: 
+```{r}
+qval$pi0
+```
+4. Now perform a t-test (use rowttests) comparing CEU samples processed in 2003 to CEU samples processed in 2004. Then use the qvalue package to obtain q-values for each gene.
+
+How many genes have q-values < 0.05?
+
+```{r}
+year = factor( format(sampleInfo$date,"%y") )
+index = which(year %in% c("03","04") & sampleInfo$ethnicity == "CEU")
+year = droplevels(year[index]) 
+pval = rowttests(geneExpression[ ,index], year)$p.value
+qval = qvalue(pval)
+sum(qval$qvalue < 0.05)
+```
+
+5. Now we are going to compare ethnicities as was done in the original publication in which these data were first presented. Use the rowttests function to compare the ASN population to the CEU population. Once again, use the qvalue function to obtain q-values.
+
+How many genes have q-values < 0.05?
+```{r}
+ethncty = factor(sampleInfo$ethnicity)
+index = which(ethncty %in% c("ASN", "CEU"))
+ethncty = droplevels(ethncty[index])
+pval = rowttests(geneExpression[ ,index], ethncty)$p.value
+qval = qvalue(pval)
+sum(qval$qvalue < 0.05)
+```
+6. Note that over 80% of genes are called differentially expressed between ethnic groups. However, due to the confounding with processing date, we need to confirm these differences are actually due to ethnicity. This will not be easy due to the almost perfect confounding. However, above we noted that two groups were represented in 2005. Just like we stratified by majors to remove the "major effect" in our admissions example, here we can stratify by year and perform a t-test comparing ASN and CEU, but only for samples processed in 2005.
+
+How many genes have q-values < 0.05?
+```{r}
+ethncty = factor(sampleInfo$ethnicity)
+year = factor( format(sampleInfo$date,"%y") )
+index = which(ethncty %in% c("ASN", "CEU") & year =="05")
+ethncty = droplevels(ethncty[index])
+pval = rowttests(geneExpression[ ,index], ethncty)$p.value
+qval = qvalue(pval)
+sum(qval$qvalue < 0.05)
+```
+Note the dramatic drop in the number of genes with q-value < 0.05 when we fix the year. However, the sample size is much smaller in this latest analysis which means we have less power:
+```{r}
+table(sampleInfo$ethnicity[index])
+```
+
+7. To provide a more balanced comparison we repeat the analysis but now taking 3 random CEU samples from 2002. Repeat the analysis above but comparing the ASN from 2005 to three random CEU samples from 2002. Set the seed at 3, set.seed(3)
+
+How many genes have q-values < 0.05?
+```{r}
+ethncty = factor( sampleInfo$ethnicity)
+year = factor( format(sampleInfo$date,"%y") )
+index_ASN = which(ethncty %in% c("ASN") & year=="05")
+index_CEU = which(ethncty %in% c("CEU") & year=="02")
+set.seed(3)
+index_CEU = sample(index_CEU, 3)
+index = c(index_ASN,index_CEU)
+ethncty = droplevels(ethncty[index])
+pval = rowttests(geneExpression[ ,index], ethncty)$p.value
+qval = qvalue(pval)
+sum(qval$qvalue < 0.05)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,116 @@
+---
+title: "Modeling Batch Effects Exercises"
+date: "October 6, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+#For the dataset we have been working with, models do not help due to the almost perfect confounding. 
+#This is one reason we created the subset dataset:
+
+library(GSE5859Subset)
+data(GSE5859Subset)
+
+#Here we purposely confounded month and group (sex) but not completely:
+
+sex = sampleInfo$group
+month = factor( format(sampleInfo$date,"%m"))
+table( sampleInfo$group, month)
+```
+1. Using the functions rowttests and qvalue compare the two groups, in this case males and females so coded in sex. Because this is a smaller dataset, which decreases our power, we will use a more lenient FDR cut-off of 10%.
+How many gene have q-values less than 0.1?
+```{r}
+library(qvalue)
+library(genefilter) # has the rowttests fctn
+sex = factor(sex)
+month = factor(format(sampleInfo$date,"%m"))
+pval = rowttests(geneExpression, sex)$p.value
+qval = qvalue(pval)
+sum(qval$qvalue < 0.1)
+```
+2. Note that sampleInfo$group here represents males and females. Thus we expect differences to be on chrY and, for genes that escape inactivation, chrX. Note that we do not expect many autosomal genes to be different between males and females. This gives us an opportunity to evaluate false and true positives with experimental data. For example, we evaluate results using the proportion genes of the list that are on chrX or chrY.
+
+For the list of genes with q<0.1 calculated in Modeling Batch Effects Exercises #1, what proportion of genes are on chrX or chrY?
+```{r}
+qvals = qval$qvalues
+index = geneAnnotation$CHR[qvals < 0.1] %in% c("chrX","chrY")
+mean(index)
+```
+3. Now for the autosomal genes (not on chrX and chrY) for which q-value < 0.1 perform a t-test comparing samples processed in June to those processed in October.
+
+What proportion of these have p-values < 0.05?
+```{r}
+index = which(qvals < 0.1 & !geneAnnotation$CHR %in% c("chrX","chrY"))
+pval = rowttests(geneExpression[index,], month)$p.value
+mean(pval < 0.05)
+```
+4. The above result shows that the great majority of the autosomal genes show differences due to processing data. This provides further evidence that confounding is resulting in false positives. So we are going to try to model the month effect to better estimate the sex effect. We are going to use a linear model:
+Which of the following creates the appropriate design matrix?
+
+    X = model.matrix(~sex+ethnicity)
+    X = cbind(sex,as.numeric(month))
+    X = model.matrix(~sex+month) correct
+    it can't be done with one line
+    
+5. Now use the X defined above to fit a regression model using lm for each gene. Note that you can obtain p-values for estimated parameters using summary. Here is an example:
+```{r}
+X = model.matrix(~sex+month)
+i = 234
+y = geneExpression[i,]
+fit = lm(y~X-1)
+summary(fit)$coef
+```
+How many of the q-values for the group comparison are <0.1 now?
+```{r}
+# Use example page 438
+X = model.matrix(~sex+month)
+
+pvals <- t( sapply(1:nrow(geneExpression),function(i){
+  y <- geneExpression[i,]
+  fit <- lm(y ~ X-1)
+  summary(fit)$coefficients[2,4] # the 2 extracts the second (sex) coef and the 4 extracts the p-value
+} ) )
+
+qval = qvalue(pvals)
+qvals = qval$qvalues
+sum(qvals < 0.1)
+```
+Note the big drop from what we obtained without the correction.
+
+6. With this new list, what proportion of these are chrX and chrY?
+```{r}
+index = geneAnnotation$CHR[qvals <0.1 ] %in% c("chrX","chrY")
+mean(index)
+```
+7. Now, from the linear model in Modeling Batch Effects Exercises #6, extract the p-values related to the coefficient representing the October versus June differences using the same linear model.
+
+How many of the q-values for the month comparison are < 0.1 now?
+
+```{r}
+X = model.matrix(~ sex + month)
+
+pvals <- t(sapply(1:nrow(geneExpression),function(j){
+  y <- geneExpression[j,]
+  fit <- lm(y ~ X-1)
+  summary(fit)$coefficients[3,4] # Grab the third coef - for month
+} ) )
+
+qval = qvalue(pvals)
+qvals = qval$qvalues
+sum(qvals < 0.1)
+
+
+
+
+
+```
+Note that this approach is basically the approach implemented by Combat.
+
+
+
+
+
+

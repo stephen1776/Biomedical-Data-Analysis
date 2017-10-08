@@ -1,0 +1,106 @@
+---
+title: "Distance Exercises"
+date: "September 19, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+1. If you have not done so already, install the data package tissueGeneExpression.
+
+  library(devtools)
+  install_github("genomicsclass/tissuesGeneExpression")
+  
+
+The data represents RNA expression levels for seven tissues, each with several biological replicates. We call samples that we consider to be from the same population, such as liver tissue from different individuals,biological replictes:
+```{r}
+library(tissuesGeneExpression)
+data(tissuesGeneExpression)
+#head(e)
+head(e[,1:5])
+head(tissue)
+```
+How many biological replicates for hippocampus?
+```{r}
+table(tissue)
+# or sum(tissue=="hippocampus")
+```
+2, What is the distance between samples 3 and 45?
+```{r}
+sqrt( crossprod(e[,3] - e[,45]) )
+# or sqrt( sum((e[,3]-e[,45])^2 ))
+```
+
+3. What is the distance between gene 210486_at and 200805_at
+
+```{r}
+sqrt( crossprod(e["210486_at",] - e["200805_at",]) )
+# or sqrt( sum((e["210486_at",]-e["200805_at",])^2 ))
+```
+
+4. If I run the command (don't run it!)
+
+d = as.matrix(dist( e))
+  
+
+How many cells (number of rows times number of columns) would this matrix have?
+
+```{r}
+nrow(e)^2
+##every pair of rows has an entry
+```
+5. Compute the distance between all pairs of samples:
+
+d = dist(t(e))
+
+Read the help file for dist.
+
+How many distances are stored in d? (Hint: What is the length of d)?
+
+```{r}
+d = dist(t(e))
+length(d)
+```
+6. Why is the answer above not ncol(e)^2?
+
+    R made a mistake there
+    Distances of 0 are left out
+    Because we take advantage of symmetry: only lower triangular matrix is stored thus only ncol(e)*(ncol(e)-1)/2 values. correct
+    Because it is equal to nrow(e)^2
+
+Note that the distance between samples i and j is the same as distance between samples j and i. Also the distance between a sample and itself is 0. The object returned by dist avoids storing all those values.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

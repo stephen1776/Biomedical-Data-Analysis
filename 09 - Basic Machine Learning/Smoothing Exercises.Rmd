@@ -1,0 +1,89 @@
+---
+title: "Smoothing Exercises"
+date: "October 2, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+1. Use the data generated in question 2.6.2
+```{r}
+n = 10000
+set.seed(1)
+men = rnorm(n,176,7) #height in centimeters
+women = rnorm(n,162,7) #height in centimeters
+y = c(rep(0,n),rep(1,n))
+x = round(c(men,women))
+##mix it up
+ind = sample(seq(along=y))
+y = y[ind]
+x = x[ind]
+  
+
+#Set the seed at 5, set.seed(5) and take a random sample of 250 individuals from the population like this:
+
+set.seed(5)
+N = 250
+ind = sample(length(y),N)
+Y = y[ind]
+X = x[ind]
+```
+Use loess to estimate $f(x) = E(Y|X=x)$ using the default parameters. What is the predicted f(168)?
+```{r}
+fit <- loess(Y~X)
+newx <- seq(160,178)
+smooth <- predict(fit,newdata=data.frame(X=newx))
+P_ys =sapply(newx,function(k){
+  mean(Y[X==k])
+  })
+
+plot(newx,P_ys)
+lines(newx,smooth)
+
+smooth[newx==168]
+predict(fit,newdata=data.frame(X=168))
+```
+
+2. The loess estimate above is a random variable thus we should compute its standard error. Use Monte Carlo simulation to compute the standard error of your estimate of f(168).
+
+Set the seed to 5, set.seed(5) and perform 1000 simulation of the computations performed in question 2.7.1. Report the the SE of the loess based estimate.
+```{r}
+N_sim = 1000
+xs = seq(160,178)
+set.seed(5)
+sim2 <- replicate(N_sim,{
+  N <- 250
+  ind <- sample(length(y),N)
+  Y <- y[ind]
+  X <- x[ind]
+  fit <-loess(Y~X)
+  smooth_estimate <- predict(fit,newdata=data.frame(X=168))
+  return(smooth_estimate)
+  })
+library(rafalib)
+popsd(sim2)
+
+# Model Answer
+# ##plot plots are optional
+# set.seed(5)
+# B = 1000
+# N = 250
+# xs = seq(160,178)
+# plot(xs,xs,ylim=c(0,1),type="l")
+# res = replicate(B,{
+#   ind = sample(length(y),N)
+#   Y = y[ind]
+#   X = x[ind]
+#   fit=loess(Y~X)
+#   ##optional plots
+#   fitted=predict(fit,newdata=data.frame(X=xs))
+#   lines(xs,fitted)
+#   estimate = predict(fit,newdata=data.frame(X=168))
+#   return(estimate)
+#   })
+# library(rafalib)
+# popsd(res)
+```
+
+
